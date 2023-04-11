@@ -78,18 +78,30 @@ class Interpret:
             except FileNotFoundError:
                 self.print_error("XML file not found.", 30)
             xmlRoot = xmlTree.getroot()
-        #if self.inputFile != None:
         if self.inputFile != None:
             try:
                 inputFile = open(self.inputFile, "r")
             except FileNotFoundError:
                 self.print_error("Input file not found.", 30)
+        #test vypis
         for child in xmlRoot:
             print(child.tag, child.attrib)
+        
+        #kontrola language typu
+        if xmlRoot.get('language') != 'IPPcode23':
+            self.print_error("spatny typ jazyka", 32)
 
+        #parsovani instrukci
+        for instruction in xmlRoot.findall('instruction'):
+            self.parse_instruction(instruction)
         return
 
-
+    def parse_instruction(self, instruction):
+            if 'order' in instruction.attrib and 'opcode' in instruction.attrib and len(instruction.attrib) == 2:
+                arguments = {'arg1': None, 'arg2': None, 'arg3': None}
+                for arg in instruction:
+                    #TODO kontrola atributu ve funkci do urcite miry
+                    pass
 #testing
 myInterpret = Interpret()
 myInterpret.parse_arguments()
