@@ -24,8 +24,12 @@ class Interpret:
         self.xmlFile = None
         self.inputFile = None
 
+    def print_error(self, text, errorCode):
+        print(text)
+        print("exiting Interpret...")
+        exit(errorCode)
 
-    def print_help():
+    def print_help(self):
         help_string = """
         Interpret pro jazyk IPPcode23.
         Autor: Jakub Kurka, xkurka06
@@ -45,8 +49,11 @@ class Interpret:
         if len(args_list) > 3:
             print("Max number of arguments is 2")
             exit(30)  # TODO zmenit na spravnej error code
-        pass
 
+        elif len(args_list) == 1:
+            self.print_help()
+            exit(0)
+        
         for myArg in args_list:
             if myArg == "--help":
                 self.print_help()
@@ -54,18 +61,36 @@ class Interpret:
             elif re.match("^--file=[a-zA-z0-9\.]+$", myArg):
                 # xml file
                 print("found xml file")
-                filename = re.split("=", myArg)[1]
-                self.xmlFile = open(filename, "r")
+                self.xmlFile = re.split("=", myArg)[1]
             elif re.match("^--input=[a-zA-z0-9\.]*$", myArg):
                 # input file, nebo rovnou prikazy
                 print("found input file")
-                filename = re.split("=", myArg)[1]
-                self.inputFile = open(filename, "r")
-    
+                self.inputFile = re.split("=", myArg)[1]
+
+            
     def parse_source_file(self):
-        pass
+        xmlRoot, inputFile = None, None
+        if (self.xmlFile == None) and (self.inputFile == None):
+            self.print_error("Sorry neni zadan xml soubor, ani input file.", 30) #TODO zmenit na spravny error code
+        if self.xmlFile != None:
+            try:
+                xmlTree = ET.parse(self.xmlFile)
+            except FileNotFoundError:
+                self.print_error("XML file not found.", 30)
+            xmlRoot = xmlTree.getroot()
+        #if self.inputFile != None:
+        if self.inputFile != None:
+            try:
+                inputFile = open(self.inputFile, "r")
+            except FileNotFoundError:
+                self.print_error("Input file not found.", 30)
+        for child in xmlRoot:
+            print(child.tag, child.attrib)
+
+        return
 
 
 #testing
 myInterpret = Interpret()
 myInterpret.parse_arguments()
+myInterpret.parse_source_file()
