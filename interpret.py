@@ -2,6 +2,7 @@ import sys
 import re
 import xml.etree.ElementTree as ET
 
+
 class Frame:
     def __init__(self) -> None:
         self.local_vars = {}
@@ -23,6 +24,7 @@ class Interpret:
         self.frames = []
         self.xmlFile = None
         self.inputFile = None
+        self.todo = {}
 
     def print_error(self, text, errorCode):
         print(text)
@@ -53,7 +55,7 @@ class Interpret:
         elif len(args_list) == 1:
             self.print_help()
             exit(0)
-        
+
         for myArg in args_list:
             if myArg == "--help":
                 self.print_help()
@@ -67,11 +69,12 @@ class Interpret:
                 print("found input file")
                 self.inputFile = re.split("=", myArg)[1]
 
-            
     def parse_source_file(self):
         xmlRoot, inputFile = None, None
         if (self.xmlFile == None) and (self.inputFile == None):
-            self.print_error("Sorry neni zadan xml soubor, ani input file.", 30) #TODO zmenit na spravny error code
+            # TODO zmenit na spravny error code
+            self.print_error(
+                "Sorry neni zadan xml soubor, ani input file.", 30)
         if self.xmlFile != None:
             try:
                 xmlTree = ET.parse(self.xmlFile)
@@ -83,26 +86,60 @@ class Interpret:
                 inputFile = open(self.inputFile, "r")
             except FileNotFoundError:
                 self.print_error("Input file not found.", 30)
-        #test vypis
+        # test vypis
         for child in xmlRoot:
             print(child.tag, child.attrib)
-        
-        #kontrola language typu
+
+        # kontrola language typu
         if xmlRoot.get('language') != 'IPPcode23':
             self.print_error("spatny typ jazyka", 32)
 
-        #parsovani instrukci
+        # parsovani instrukci
         for instruction in xmlRoot.findall('instruction'):
             self.parse_instruction(instruction)
         return
 
     def parse_instruction(self, instruction):
-            if 'order' in instruction.attrib and 'opcode' in instruction.attrib and len(instruction.attrib) == 2:
-                arguments = {'arg1': None, 'arg2': None, 'arg3': None}
-                for arg in instruction:
-                    #TODO kontrola atributu ve funkci do urcite miry
-                    pass
-#testing
+        if 'order' in instruction.attrib and 'opcode' in instruction.attrib and len(instruction.attrib) == 2:
+            arguments = {'arg1': None, 'arg2': None, 'arg3': None}
+            for arg in instruction:
+                # TODO kontrola atributu ve funkci do urcite miry
+                if not (len(arg.keys()) == 1 and 'type' in arg.keys()):
+                    self.print_error("wrong arg attribute", 32)
+
+                try:
+                    if arguments[arg.tag] is None:
+                        arguments[arg.tag] = (arg.get('type'), arg.text)
+                    else:
+                        self.print_error("redefinice argumentu", 32)
+                except:
+                    self.print_error("Spatny subelement instrukce", 32)
+
+            if arguments['arg3'] is not None:
+                if arguments['arg2'] is not None:
+                    if arguments['arg1'] is None:
+                        self.print_error("wrong argument index", 32)
+                else:
+                    self.print_error("wrong argument index", 32)
+            if arguments['arg2'] is not None and arguments['arg1'] is None:
+                self.print_error("wrong argument index", 32)
+
+            key = instruction.attrib['order']
+            to_execute = (instruction.attrib['opcode'], arguments)
+
+            if key in self.todo:
+                self.print_error("vice instrukci se stejnym order", 32)
+            self.todo[key] = to_execute
+        else:
+            self.print_error("Spatne atributy u instrukce", 31)
+
+    def check_execute_order(self):
+        for key in self.todo.keys():
+            if int(key) not in range(1, len(self.todo)+1):
+                self.print_error("spatne poradi Instrukci", 32)
+    
+
+# testing
 myInterpret = Interpret()
 myInterpret.parse_arguments()
 myInterpret.parse_source_file()
