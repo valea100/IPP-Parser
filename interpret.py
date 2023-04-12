@@ -138,6 +138,59 @@ class Interpret:
             if int(key) not in range(1, len(self.todo)+1):
                 self.print_error("spatne poradi Instrukci", 32)
     
+    def execute(self):
+        self.check_execute_order()
+        pass
+    
+
+    
+    def check_operand(self, expected_type, var, err=True):
+        var_type = var[0]
+        ret = None
+        if var_type not in expected_type:
+            self.print_error("Špatný typ operandů", 53)
+        variable = var[1]
+        if var_type == 'var':
+            ret = re.match(r'(GF|LF|TF)@([_\-$&%*!?a-zA-Z]+[_\-$&%*!?a-zA-Z0-9]*)', variable)
+            if ret is None:
+                self.print_error("Špatný formát <var>", 32)
+            frame = ret.group(1)
+            value = ret.group(2)
+            return frame, value
+        
+        else:
+            if var_type == 'string':
+                ret = re.match(r'(\S)*', variable)
+            elif var_type == 'int':
+                ret = re.match(r'-?[0-9]+', variable)
+            elif var_type == 'bool':
+                ret = re.match(r'true$|false$', variable, re.IGNORECASE)
+            elif var_type == 'nil':
+                ret = re.match(r'nil$', variable)
+            elif var_type == 'label':
+                ret = re.match(r'(\S)+', variable)
+            else:
+                self.print_error("Špatný typ operandu.", 53)
+            
+            if ret is None:
+                if err:
+                    self.print_error("Špatný formát proměnné.", 32)
+                else:
+                    return var_type, ""     #promenna bez hodnoty
+                    
+            else:
+                value = ret.string
+                return var_type, value
+    
+    @staticmethod
+    def check_bool(value):
+        if re.match(r'true$', value, re.IGNORECASE):
+            return True
+        elif re.match(r'false$', value, re.IGNORECASE):
+            return False
+        else:
+            return value
+    
 
 # testing
 myInterpret = Interpret()
